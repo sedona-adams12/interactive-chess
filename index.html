@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Interactive Chess</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="game-container">
+
+        <header class="topbar">
+
+            <div>
+                <h1>♟ Interactive Chess</h1>
+                <p>Play chess locally against another player</p>
+            </div>
+
+            <div class="header-buttons">
+                <button id="undo-button">↶ Undo</button>
+                <button id="new-game">New Game</button>
+            </div>
+
+        </header>
+
+        <section class="game-layout">
+
+            <div class="board-section">
+
+                <div id="status" class="status">
+                    White's turn
+                </div>
+
+                <div id="board" class="board"></div>
+
+            </div>
+
+            <aside class="sidebar">
+
+                <div class="panel">
+
+                    <h2>Game Information</h2>
+
+                    <div class="info-row">
+                        <span>Turn</span>
+                        <strong id="turn">White</strong>
+                    </div>
+
+                    <div class="info-row">
+                        <span>Moves</span>
+                        <strong id="move-count">0</strong>
+                    </div>
+
+                </div>
+
+                <div class="panel">
+
+                    <h2>Captured Pieces</h2>
+
+                    <div class="captured-group">
+
+                        <div>
+                            <span>White</span>
+                            <div id="white-captured" class="captured"></div>
+                        </div>
+
+                        <div>
+                            <span>Black</span>
+                            <div id="black-captured" class="captured"></div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="panel">
+
+                    <h2>Move History</h2>
+
+                    <div id="move-history" class="move-history">
+                        <p class="empty">No moves yet</p>
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

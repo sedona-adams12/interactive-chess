@@ -32,3 +32,21 @@
 .in-check {
     background: #ef4444 !important;
 }
+
+.valid-move {
+    position: relative;
+}
+
+.valid-move::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    background: rgba(34, 197, 94, 0.75);
+    border-radius: 50%;
+    position: absolute;
+}
+
+
+.capture-move {
+    box-shadow: inset 0 0 0 5px #22c55e;
+}

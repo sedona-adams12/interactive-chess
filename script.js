@@ -1,3 +1,4 @@
+
 const board = document.getElementById("board");
 const status = document.getElementById("status");
 const turnDisplay = document.getElementById("turn");
@@ -14,6 +15,7 @@ let gameOver = false;
 let moveCount = 0;
 
 let moveHistory = [];
+
 let capturedPieces = {
     white: [],
     black: []
@@ -143,12 +145,12 @@ function followsMovementRules(startRow, startCol, endRow, endCol) {
 
     const destination = pieces[endRow][endCol];
 
-    // A piece cannot capture another piece of the same color.
+    // A piece cannot capture its own color.
     if (destination && destination.color === piece.color) {
         return false;
     }
 
-    // Kings should not be captured directly.
+    // Kings cannot be captured directly.
     if (destination && destination.type === "king") {
         return false;
     }
@@ -157,12 +159,10 @@ function followsMovementRules(startRow, startCol, endRow, endCol) {
         const direction = piece.color === "white" ? -1 : 1;
         const startingRow = piece.color === "white" ? 6 : 1;
 
-        // Move one square forward.
         if (colDifference === 0 && rowDifference === direction) {
             return destination === null;
         }
 
-        // Move two squares from the starting position.
         if (
             colDifference === 0 &&
             rowDifference === direction * 2 &&
@@ -174,7 +174,6 @@ function followsMovementRules(startRow, startCol, endRow, endCol) {
             );
         }
 
-        // Capture diagonally.
         if (
             rowDifference === direction &&
             colDistance === 1
@@ -374,6 +373,84 @@ function wouldBeInCheck(
     return result;
 }
 
+function isValidCastling(
+    startRow,
+    startCol,
+    endRow,
+    endCol
+) {
+    const king = pieces[startRow][startCol];
+
+    if (!king || king.type !== "king") {
+        return false;
+    }
+
+    if (king.hasMoved) {
+        return false;
+    }
+
+    if (startRow !== endRow) {
+        return false;
+    }
+
+    if (Math.abs(endCol - startCol) !== 2) {
+        return false;
+    }
+
+    if (isKingInCheck(king.color)) {
+        return false;
+    }
+
+    const direction = endCol > startCol ? 1 : -1;
+    const rookCol = direction === 1 ? 7 : 0;
+    const rook = pieces[startRow][rookCol];
+
+    if (
+        !rook ||
+        rook.type !== "rook" ||
+        rook.color !== king.color ||
+        rook.hasMoved
+    ) {
+        return false;
+    }
+
+    const betweenStart = Math.min(startCol, rookCol) + 1;
+    const betweenEnd = Math.max(startCol, rookCol);
+
+    for (let col = betweenStart; col < betweenEnd; col++) {
+        if (pieces[startRow][col] !== null) {
+            return false;
+        }
+    }
+
+    const opposingColor =
+        king.color === "white" ? "black" : "white";
+
+    const middleCol = startCol + direction;
+
+    if (
+        isSquareAttacked(
+            startRow,
+            middleCol,
+            opposingColor
+        )
+    ) {
+        return false;
+    }
+
+    if (
+        isSquareAttacked(
+            startRow,
+            endCol,
+            opposingColor
+        )
+    ) {
+        return false;
+    }
+
+    return true;
+}
+
 function isValidMove(
     startRow,
     startCol,
@@ -393,6 +470,18 @@ function isValidMove(
 
     if (!piece || piece.color !== currentPlayer) {
         return false;
+    }
+
+    if (
+        piece.type === "king" &&
+        Math.abs(endCol - startCol) === 2
+    ) {
+        return isValidCastling(
+            startRow,
+            startCol,
+            endRow,
+            endCol
+        );
     }
 
     if (
@@ -513,9 +602,28 @@ function isStalemate(color) {
     return !isKingInCheck(color) && !hasAnyLegalMoves(color);
 }
 
+function promotePawn(row, col) {
+    const piece = pieces[row][col];
+
+    if (!piece || piece.type !== "pawn") {
+        return;
+    }
+
+    if (
+        piece.color === "white" && row === 0 ||
+        piece.color === "black" && row === 7
+    ) {
+        piece.type = "queen";
+    }
+}
+
 function movePiece(startRow, startCol, endRow, endCol) {
     const movingPiece = pieces[startRow][startCol];
     const capturedPiece = pieces[endRow][endCol];
+
+    const isCastling =
+        movingPiece.type === "king" &&
+        Math.abs(endCol - startCol) === 2;
 
     if (capturedPiece) {
         capturedPieces[capturedPiece.color].push(capturedPiece);
@@ -526,13 +634,28 @@ function movePiece(startRow, startCol, endRow, endCol) {
 
     movingPiece.hasMoved = true;
 
+    if (isCastling) {
+        const rookStartCol = endCol > startCol ? 7 : 0;
+        const rookEndCol = endCol > startCol ? 5 : 3;
+
+        const rook = pieces[startRow][rookStartCol];
+
+        pieces[startRow][rookEndCol] = rook;
+        pieces[startRow][rookStartCol] = null;
+
+        rook.hasMoved = true;
+    }
+
+    promotePawn(endRow, endCol);
+
     moveCount++;
 
     moveHistory.push({
         piece: movingPiece.type,
         color: movingPiece.color,
         start: [startRow, startCol],
-        end: [endRow, endCol]
+        end: [endRow, endCol],
+        castling: isCastling
     });
 
     currentPlayer = currentPlayer === "white" ? "black" : "white";
@@ -641,7 +764,7 @@ function updateGameInformation() {
         moveHistory.forEach(function (move, index) {
             const moveItem = document.createElement("p");
 
-            moveItem.textContent =
+            let moveText =
                 (index + 1) +
                 ". " +
                 move.color +
@@ -652,6 +775,12 @@ function updateGameInformation() {
                 ") → (" +
                 move.end.join(",") +
                 ")";
+
+            if (move.castling) {
+                moveText += " Castling";
+            }
+
+            moveItem.textContent = moveText;
 
             moveHistoryDisplay.appendChild(moveItem);
         });
